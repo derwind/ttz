@@ -77,7 +77,7 @@ def TT_SVD_Vidal(
 ) -> tuple[list[np.ndarray], list[np.ndarray]]:
     """TT_SVD Vidal algorithm
 
-    Guifré Vidal, Efficient Classical Simulation of Slightly Entangled Quantum Computations, https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.91.147902
+    Guifré Vidal, Efficient Classical Simulation of Slightly Entangled Quantum Computations, https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.91.147902, Phys. Rev. Lett. 91, 147902 – Published 1 October 2003
 
     Args:
         C (np.ndarray): n-dimensional input tensor

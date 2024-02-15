@@ -14,7 +14,7 @@ def TT_SVD(
 ) -> list[torch.Tensor] | tuple[list[torch.Tensor], list[torch.Tensor]]:
     """TT_SVD algorithm
 
-    I. V. Oseledets, Tensor-Train Decomposition, https://epubs.siam.org/doi/10.1137/090752286
+    I. V. Oseledets, Tensor-Train Decomposition, https://epubs.siam.org/doi/10.1137/090752286, Vol. 33, Iss. 5 (2011)
 
     Args:
         C (torch.Tensor): n-dimensional input tensor
@@ -75,6 +75,19 @@ def TT_SVD(
 
 
 class TTLayer(nn.Module):
+    """Tensor-Train Layer
+
+    Alexander Novikov, Dmitrii Podoprikhin, Anton Osokin, Dmitry P. Vetrov, Tensorizing Neural Networks, https://papers.nips.cc/paper_files/paper/2015/hash/6855456e2fe46a9d49d3d3af4f57443d-Abstract.html, (NIPS 2015)
+
+    Args:
+        in_shape (Sequence[int]): input shape
+        out_shape (Sequence[int]): output shape
+        w (torch.Tensor | None): weight tensor
+        b (torch.Tensor | None): bias tensor
+        tt_shapes (Sequence[Sequence[int]] | None): a list of shapes of core tensors
+        bond_dims (Sequence[int] | None): a list of bond dimensions
+    """
+
     def __init__(
         self,
         in_shape: Sequence[int],
