@@ -59,6 +59,10 @@ def TT_SVD(
         ri = bond_dims[i]
         C = C.reshape(ri_1 * dims[i], dims[i + 1 :].numel())
         U, S, Vh = torch.linalg.svd(C, full_matrices=False)
+        if S.shape[0] < ri:
+            # already size of S is less than requested bond_dims, so update the dimension
+            ri = S.shape[0]
+            bond_dims[i] = ri
         # approximation
         U = U[:, :ri]
         S = S[:ri]
