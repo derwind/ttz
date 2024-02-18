@@ -70,6 +70,9 @@ class MPS:
     def cz(self, control: int, target: int) -> None:
         apply_CZ(self._gammas, self._lambdas, control, target)
 
+    def swap(self, qubit1: int, qubit2: int) -> None:
+        apply_SWAP(self._gammas, self._lambdas, qubit1, qubit2)
+
 
 # https://github.com/Qiskit/qiskit-aer/blob/0.13.1/src/simulators/matrix_product_state/matrix_product_state_internal.cpp#L1754-L1819
 def TT_SVD_Vidal(
@@ -299,13 +302,16 @@ def apply_two_qubits_gate(
     gammas[i + 1] = updated_gammas[1]
 
 
-CX = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]], dtype=float)
+CX = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]], dtype=complex)
 
 
 CY = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]], dtype=complex)
 
 
-CZ = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]], dtype=float)
+CZ = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]], dtype=complex)
+
+
+SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]], dtype=complex)
 
 
 def apply_CX(gammas, lambdas, i, j):
@@ -318,3 +324,7 @@ def apply_CY(gammas, lambdas, i, j):
 
 def apply_CZ(gammas, lambdas, i, j):
     apply_two_qubits_gate(gammas, lambdas, CZ, i, j)
+
+
+def apply_SWAP(gammas, lambdas, i, j):
+    apply_two_qubits_gate(gammas, lambdas, SWAP, i, j)
