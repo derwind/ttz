@@ -232,7 +232,10 @@ def Ry(theta: float):
 
 def Rz(theta: float):
     return np.array(
-        [[np.cos(theta / 2) - np.sin(theta / 2), 0], [0, np.cos(theta / 2) + np.sin(theta / 2)]],
+        [
+            [np.cos(theta / 2) - np.sin(theta / 2) * 1j, 0],
+            [0, np.cos(theta / 2) + np.sin(theta / 2) * 1j],
+        ],
         dtype=complex,
     )
 
