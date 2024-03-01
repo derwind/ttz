@@ -46,7 +46,9 @@ class TestTT(unittest.TestCase):
         torch.backends.cudnn.deterministic = True
 
         layer = nn.Linear(1024, 100)
-        ttlayer = TTLayer.from_linear_layer([2**5, 2**5], [10, 10], layer, bond_dims=[10, 99, 32])
+        ttlayer = TTLayer.from_linear_layer(
+            [2**5, 2**5], [10, 10], layer, bond_dims=[10, 99, 32]
+        )
         input = torch.randn(1, 1024)
         output1 = layer(input).detach().cpu().numpy()
         output2 = ttlayer(input).detach().cpu().numpy()
@@ -59,7 +61,9 @@ class TestTT(unittest.TestCase):
         torch.backends.cudnn.deterministic = True
 
         layer = nn.Linear(1024, 100)
-        ttlayer = TTLayer.from_linear_layer([2**5, 2**5], [10, 10], layer, bond_dims=[9, 100, 32])
+        ttlayer = TTLayer.from_linear_layer(
+            [2**5, 2**5], [10, 10], layer, bond_dims=[9, 100, 32]
+        )
         input = torch.randn(1, 1024)
         output1 = layer(input).detach().cpu().numpy()
         output2 = ttlayer(input).detach().cpu().numpy()
@@ -72,7 +76,9 @@ class TestTT(unittest.TestCase):
         torch.backends.cudnn.deterministic = True
 
         layer = nn.Linear(256, 16384)
-        ttlayer = TTLayer.from_linear_layer([2**4, 2**4], [2**7, 2**7], layer, bond_dims=[127, 256, 16])
+        ttlayer = TTLayer.from_linear_layer(
+            [2**4, 2**4], [2**7, 2**7], layer, bond_dims=[127, 256, 16]
+        )
         input = torch.randn(1, 256)
         output1 = layer(input).detach().cpu().numpy()
         output2 = ttlayer(input).detach().cpu().numpy()

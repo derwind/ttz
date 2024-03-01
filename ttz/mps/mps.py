@@ -52,6 +52,18 @@ class MPS:
     def h(self, qubit: int) -> None:
         apply_H(self._gammas, qubit)
 
+    def s(self, qubit: int) -> None:
+        apply_S(self._gammas, qubit)
+
+    def sdg(self, qubit: int) -> None:
+        apply_Sdag(self._gammas, qubit)
+
+    def t(self, qubit: int) -> None:
+        apply_T(self._gammas, qubit)
+
+    def tdg(self, qubit: int) -> None:
+        apply_Tdag(self._gammas, qubit)
+
     def rx(self, theta: float, qubit: int) -> None:
         apply_Rx(self._gammas, theta, qubit)
 
@@ -61,17 +73,20 @@ class MPS:
     def rz(self, theta: float, qubit: int) -> None:
         apply_Rz(self._gammas, theta, qubit)
 
-    def cx(self, control: int, target: int) -> None:
-        apply_CX(self._gammas, self._lambdas, control, target)
+    def cx(self, control: int, target: int, auto_swap: bool = True) -> None:
+        apply_CX(self._gammas, self._lambdas, control, target, auto_swap)
 
-    def cy(self, control: int, target: int) -> None:
-        apply_CY(self._gammas, self._lambdas, control, target)
+    def cy(self, control: int, target: int, auto_swap: bool = True) -> None:
+        apply_CY(self._gammas, self._lambdas, control, target, auto_swap)
 
-    def cz(self, control: int, target: int) -> None:
-        apply_CZ(self._gammas, self._lambdas, control, target)
+    def cz(self, control: int, target: int, auto_swap: bool = True) -> None:
+        apply_CZ(self._gammas, self._lambdas, control, target, auto_swap)
 
     def swap(self, qubit1: int, qubit2: int) -> None:
         apply_SWAP(self._gammas, self._lambdas, qubit1, qubit2)
+
+    def ccx(self, i: int, j: int, k: int, auto_swap: bool = True) -> None:
+        apply_CCX(self._gammas, self._lambdas, i, j, k, auto_swap)
 
 
 # https://github.com/Qiskit/qiskit-aer/blob/0.13.1/src/simulators/matrix_product_state/matrix_product_state_internal.cpp#L1754-L1819
@@ -192,6 +207,10 @@ PauliX = np.array([[0, 1], [1, 0]], dtype=complex)
 PauliY = np.array([[0, -1j], [1j, 0]], dtype=complex)
 PauliZ = np.array([[1, 0], [0, -1]], dtype=complex)
 Hadamard = np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2)
+S = np.array([[1, 0], [0, 1j]], dtype=complex)
+Sdag = np.array([[1, 0], [0, -1j]], dtype=complex)
+T = np.array([[1, 0], [0, np.exp(1j * np.pi / 4)]], dtype=complex)
+Tdag = np.array([[1, 0], [0, np.exp(-1j * np.pi / 4)]], dtype=complex)
 
 
 def Rx(theta: float):
@@ -234,6 +253,22 @@ def apply_H(gammas: list[np.ndarray], qubit: int) -> None:
     apply_one_qubit_gate(gammas, Hadamard, qubit)
 
 
+def apply_S(gammas: list[np.ndarray], qubit: int) -> None:
+    apply_one_qubit_gate(gammas, S, qubit)
+
+
+def apply_Sdag(gammas: list[np.ndarray], qubit: int) -> None:
+    apply_one_qubit_gate(gammas, Sdag, qubit)
+
+
+def apply_T(gammas: list[np.ndarray], qubit: int) -> None:
+    apply_one_qubit_gate(gammas, T, qubit)
+
+
+def apply_Tdag(gammas: list[np.ndarray], qubit: int) -> None:
+    apply_one_qubit_gate(gammas, Tdag, qubit)
+
+
 def apply_Rx(gammas: list[np.ndarray], theta: float, qubit: int) -> None:
     apply_one_qubit_gate(gammas, Rx(theta), qubit)
 
@@ -257,15 +292,33 @@ def swap_ij_of_controlled_gate(mat: np.ndarray) -> np.ndarray:
 
 
 def apply_two_qubits_gate(
-    gammas: list[np.ndarray], lambdas: list[np.ndarray], U: np.ndarray, control: int, target: int
+    gammas: list[np.ndarray],
+    lambdas: list[np.ndarray],
+    U: np.ndarray,
+    control: int,
+    target: int,
+    auto_swap: bool = False,
 ) -> None:
-    U2 = swap_ij_of_controlled_gate(U).reshape(2, 2, 2, 2)
-    U = U.reshape(2, 2, 2, 2)
-
     i, j = control, target
 
+    if i == j:
+        raise ValueError(f"control and target must be different.")
+
+    auto_swap_list: list[tuple[int, int]] = []
     if i + 1 != j and j + 1 != i:
-        raise ValueError(f"only adjuscent qubits are supported.")
+        if not auto_swap:
+            raise ValueError(f"only adjuscent qubits are supported.")
+
+        if i > j:  # move control i -> i - 1
+            for k in range(i, j + 1, -1):
+                apply_two_qubits_gate(gammas, lambdas, SWAP, k - 1, k)
+                auto_swap_list.append((k - 1, k))
+            i = j + 1
+        else:  # move control i -> i + 1
+            for k in range(i, j - 1):
+                apply_two_qubits_gate(gammas, lambdas, SWAP, k, k + 1)
+                auto_swap_list.append((k, k + 1))
+            i = j - 1
 
     reverse = False
     if j < i:
@@ -286,9 +339,11 @@ def apply_two_qubits_gate(
         left_dim = gammas[i].shape[0] * gammas[i].shape[1]
 
     if not reverse:
+        U = U.reshape(2, 2, 2, 2)
         C = np.einsum(expr, U, gammas[i], lambdas[i], gammas[j])
     else:
-        C = np.einsum(expr, U2, gammas[i], lambdas[i], gammas[j])
+        U = swap_ij_of_controlled_gate(U).reshape(2, 2, 2, 2)
+        C = np.einsum(expr, U, gammas[i], lambdas[i], gammas[j])
 
     updated_gammas, updated_lambdas = TT_SVD_Vidal(C, num_qubits=2, dims=(left_dim, -1))
     if i > 0:
@@ -300,6 +355,10 @@ def apply_two_qubits_gate(
     gammas[i] = updated_gammas[0]
     lambdas[i] = updated_lambdas[0]
     gammas[i + 1] = updated_gammas[1]
+
+    if auto_swap_list is not None:
+        for k, l in auto_swap_list[::-1]:
+            apply_two_qubits_gate(gammas, lambdas, SWAP, k, l)
 
 
 CX = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]], dtype=complex)
@@ -314,17 +373,51 @@ CZ = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]], dtype=c
 SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]], dtype=complex)
 
 
-def apply_CX(gammas, lambdas, i, j):
-    apply_two_qubits_gate(gammas, lambdas, CX, i, j)
+def apply_CX(
+    gammas: list[np.ndarray], lambdas: list[np.ndarray], i: int, j: int, auto_swap: bool = True
+) -> None:
+    apply_two_qubits_gate(gammas, lambdas, CX, i, j, auto_swap)
 
 
-def apply_CY(gammas, lambdas, i, j):
-    apply_two_qubits_gate(gammas, lambdas, CY, i, j)
+def apply_CY(
+    gammas: list[np.ndarray], lambdas: list[np.ndarray], i: int, j: int, auto_swap: bool = True
+) -> None:
+    apply_two_qubits_gate(gammas, lambdas, CY, i, j, auto_swap)
 
 
-def apply_CZ(gammas, lambdas, i, j):
-    apply_two_qubits_gate(gammas, lambdas, CZ, i, j)
+def apply_CZ(
+    gammas: list[np.ndarray], lambdas: list[np.ndarray], i: int, j: int, auto_swap: bool = True
+) -> None:
+    apply_two_qubits_gate(gammas, lambdas, CZ, i, j, auto_swap)
 
 
-def apply_SWAP(gammas, lambdas, i, j):
+def apply_SWAP(
+    gammas: list[np.ndarray], lambdas: list[np.ndarray], i: int, j: int, auto_swap: bool = True
+) -> None:
     apply_two_qubits_gate(gammas, lambdas, SWAP, i, j)
+
+
+def apply_CCX(
+    gammas: list[np.ndarray],
+    lambdas: list[np.ndarray],
+    i: int,
+    j: int,
+    k: int,
+    auto_swap: bool = True,
+) -> None:
+    apply_H(gammas, k)
+    apply_CX(gammas, lambdas, j, k, auto_swap)
+    apply_Tdag(gammas, k)
+    apply_CX(gammas, lambdas, i, k, auto_swap)
+    apply_T(gammas, k)
+    apply_CX(gammas, lambdas, j, k, auto_swap)
+    apply_Tdag(gammas, j)
+    apply_Tdag(gammas, k)
+    apply_CX(gammas, lambdas, i, k, auto_swap)
+    apply_CX(gammas, lambdas, i, j, auto_swap)
+    apply_T(gammas, i)
+    apply_Tdag(gammas, j)
+    apply_T(gammas, k)
+    apply_CX(gammas, lambdas, i, j, auto_swap)
+    apply_S(gammas, j)
+    apply_H(gammas, k)
