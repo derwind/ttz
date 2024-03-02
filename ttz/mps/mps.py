@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from numpy import linalg  # XXX
 import mynumpy as np
 # from opt_einsum import contract
 
@@ -126,7 +127,7 @@ def TT_SVD_Vidal(
     for sep in range(1, num_qubits):
         row_dim = np.prod(dims[:sep])
         col_dim = np.prod(dims[sep:])
-        rank = np.linalg.matrix_rank(C.reshape(row_dim, col_dim))
+        rank = linalg.matrix_rank(C.reshape(row_dim, col_dim).data)
         r.append(rank)
 
     for i in range(num_qubits - 1):
@@ -136,7 +137,10 @@ def TT_SVD_Vidal(
             ri_1 = r[i - 1]
         ri = r[i]
         C = C.reshape(ri_1 * dims[i], np.prod(dims[i + 1 :]))
-        U, S, Vh = np.linalg.svd(C, full_matrices=False)
+        U, S, Vh = linalg.svd(C.data, full_matrices=False)
+        U = np.array(U.tolist(), dtype=complex)
+        S = np.array(S.tolist(), dtype=complex)
+        Vh = np.array(Vh.tolist(), dtype=complex)
         U = U[:, :ri]
         S = S[:ri]
         Vh = Vh[:ri, :]
