@@ -1,7 +1,11 @@
 from __future__ import annotations
 
-import numpy as np
-from opt_einsum import contract
+import mynumpy as np
+# from opt_einsum import contract
+
+
+def contract(expr, *operands):
+    return np.einsum(expr, *operands)
 
 
 class MPS:
@@ -209,8 +213,8 @@ PauliZ = np.array([[1, 0], [0, -1]], dtype=complex)
 Hadamard = np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2)
 S = np.array([[1, 0], [0, 1j]], dtype=complex)
 Sdag = np.array([[1, 0], [0, -1j]], dtype=complex)
-T = np.array([[1, 0], [0, np.exp(1j * np.pi / 4)]], dtype=complex)
-Tdag = np.array([[1, 0], [0, np.exp(-1j * np.pi / 4)]], dtype=complex)
+T = np.array([[1, 0], [0, np.cos(np.pi / 4) + np.sin(np.pi / 4) * 1j]], dtype=complex)
+Tdag = np.array([[1, 0], [0, np.cos(np.pi / 4) - np.sin(np.pi / 4) * 1j]], dtype=complex)
 
 
 def Rx(theta: float):
