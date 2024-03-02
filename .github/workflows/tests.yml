@@ -24,7 +24,7 @@ jobs:
       - name: Install Deps
         run: python -m pip install -U -r requirements.txt
         run: python -m pip install -U -r requirements-dev.txt
-      - name: Install MyNumPy
+      - name: Install TTZ
         run: |
           python -m pip install -U .
       - name: Run Tests
