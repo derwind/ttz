@@ -40,6 +40,11 @@ class MPS:
 
         return contract(expr, *operands)
 
+    def state_vector(self) -> np.ndarray:
+        return np.array(
+            [self.amplitude(f"{i:0{self.num_qubits}b}"[::-1]) for i in range(2**self.num_qubits)]
+        )
+
     def x(self, qubit: int) -> None:
         apply_X(self._gammas, qubit)
 
