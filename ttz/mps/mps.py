@@ -1,7 +1,10 @@
 from __future__ import annotations
 
-from numpy import linalg  # XXX
 import mynumpy as np
+if False:
+    from numpy import linalg  # XXX
+else:
+    from mynumpy import linalg
 # from opt_einsum import contract
 
 
