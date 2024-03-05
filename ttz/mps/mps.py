@@ -6,11 +6,14 @@ if use_mynumpy:
     import mynumpy as np
 else:
     import numpy as np
-# from opt_einsum import contract
 
 
 def contract(expr, *operands):
-    return np.einsum(expr, *operands)
+    if use_mynumpy:
+        return np.einsum(expr, *operands)
+    else:
+        from opt_einsum import contract as opt_contract
+        return opt_contract(expr, *operands)
 
 
 class MPS:
