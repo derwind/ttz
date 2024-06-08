@@ -121,6 +121,12 @@ class TTLayer(nn.Module):
         else:
             raise ValueError("Both `w` and `` must not be None.")
 
+    def extra_repr(self) -> str:
+        return (
+            f"in_shape={self.in_shape}, out_shape={self.out_shape}, n_comps={self.n_comps} "
+            f"bond_dims={[x.shape[-1] for x in self.tt_W[:-1]]}"
+        )
+
     def forward(self, x):
         x = x.reshape(x.shape[0], *self.in_shape)
         # The `equation` string specifies the subscripts (letters in [a-zA-Z])
