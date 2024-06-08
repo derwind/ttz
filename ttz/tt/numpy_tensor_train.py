@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Sequence
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -39,7 +39,7 @@ def TT_SVD_NumPy(
     if len(r) != n - 1:
         raise ValueError(f"{len(r)=} must be {n - 1}.")
     if check_r:
-        for i, (r1, r2) in enumerate(zip(r, r_)):
+        for i, (r1, r2) in enumerate(zip(r, r_, strict=True)):
             if r1 > r2:
                 raise ValueError(f"{i}th dim {r1} must not be larger than {r2}.")
 

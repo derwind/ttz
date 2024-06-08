@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Sequence
+from collections.abc import Sequence
 
 import torch
 from torch import nn
@@ -45,7 +45,7 @@ def TT_SVD(
     if len(bond_dims) != n - 1:
         raise ValueError(f"{len(bond_dims)=} must be {n - 1}.")
     if check_bond_dims:
-        for i, (dim1, dim2) in enumerate(zip(bond_dims, bond_dims_)):
+        for i, (dim1, dim2) in enumerate(zip(bond_dims, bond_dims_, strict=True)):
             if dim1 > dim2:
                 raise ValueError(f"{i}th dim {dim1} must not be larger than {dim2}.")
 
@@ -81,7 +81,8 @@ def TT_SVD(
 class TTLayer(nn.Module):
     """Tensor-Train Layer
 
-    Alexander Novikov, Dmitrii Podoprikhin, Anton Osokin, Dmitry P. Vetrov, Tensorizing Neural Networks, https://papers.nips.cc/paper_files/paper/2015/hash/6855456e2fe46a9d49d3d3af4f57443d-Abstract.html, (NIPS 2015)
+    Alexander Novikov, Dmitrii Podoprikhin, Anton Osokin, Dmitry P. Vetrov, Tensorizing Neural Networks,
+    https://papers.nips.cc/paper_files/paper/2015/hash/6855456e2fe46a9d49d3d3af4f57443d-Abstract.html, (NIPS 2015)
 
     Args:
         in_shape (Sequence[int]): input shape
@@ -182,20 +183,20 @@ class TTLayer(nn.Module):
         # "NCD,Aa,aBb,bCc,cD->NAB"
         for i in range(len(out_shape)):
             L = capital_letters[0]
-            l = small_letters[0]
+            sl = small_letters[0]
             capital_letters = capital_letters[1:]
             small_letters = small_letters[1:]
 
             tos.append(L)
 
             if i == 0:
-                tts.append(f"{L}{l}")
+                tts.append(f"{L}{sl}")
             else:
-                tts.append(f"{last_small_letter}{L}{l}")
-            last_small_letter = l
+                tts.append(f"{last_small_letter}{L}{sl}")
+            last_small_letter = sl
         for i in range(len(in_shape)):
             L = capital_letters[0]
-            l = small_letters[0]
+            sl = small_letters[0]
             capital_letters = capital_letters[1:]
             small_letters = small_letters[1:]
 
@@ -204,6 +205,6 @@ class TTLayer(nn.Module):
             if i >= len(in_shape) - 1:
                 tts.append(f"{last_small_letter}{L}")
             else:
-                tts.append(f"{last_small_letter}{L}{l}")
-            last_small_letter = l
+                tts.append(f"{last_small_letter}{L}{sl}")
+            last_small_letter = sl
         return f'N{"".join(froms)},{",".join(tts)}->N{"".join(tos)}'

@@ -3,7 +3,7 @@
 default: lint
 
 lint:
-	ruff ttz
+	ruff check ttz
 
 pylint:
 	pylint -rn ttz
