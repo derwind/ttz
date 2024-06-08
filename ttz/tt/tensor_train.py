@@ -143,6 +143,19 @@ class TTLayer(nn.Module):
         layer: nn.Linear,
         bond_dims: Sequence[int] | None = None,
     ):
+        def product(shape):
+            v = shape[0]
+            for s in shape[1:]:
+                v *= s
+            return v
+
+        if layer.in_features != product(in_shape) or layer.out_features != product(out_shape):
+            raise ValueError(
+                "The product of `in_shape` and `out_shape` must be equal to "
+                "the number of features. "
+                f"({layer.in_features} and {layer.out_features} resp.)"
+            )
+
         return TTLayer(in_shape, out_shape, layer.weight, layer.bias, bond_dims=bond_dims)
 
     def _tt_decompose(self, w, b, in_shape, out_shape, bond_dims):
