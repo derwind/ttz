@@ -122,10 +122,7 @@ class TTLayer(nn.Module):
             raise ValueError("Both `w` and `` must not be None.")
 
     def extra_repr(self) -> str:
-        return (
-            f"in_shape={self.in_shape}, out_shape={self.out_shape}, n_comps={self.n_comps} "
-            f"bond_dims={[x.shape[-1] for x in self.tt_W[:-1]]}"
-        )
+        return f"in_shape={self.in_shape}, out_shape={self.out_shape}, n_comps={self.n_comps} " f"bond_dims={[x.shape[-1] for x in self.tt_W[:-1]]}"
 
     def forward(self, x):
         x = x.reshape(x.shape[0], *self.in_shape)
@@ -156,11 +153,7 @@ class TTLayer(nn.Module):
             return v
 
         if layer.in_features != product(in_shape) or layer.out_features != product(out_shape):
-            raise ValueError(
-                "The product of `in_shape` and `out_shape` must be equal to "
-                "the number of features. "
-                f"({layer.in_features} and {layer.out_features} resp.)"
-            )
+            raise ValueError(f"The product of `in_shape` and `out_shape` must be equal to the number of features. ({layer.in_features} and {layer.out_features} resp.)")
 
         return TTLayer(in_shape, out_shape, layer.weight, layer.bias, bond_dims=bond_dims)
 
