@@ -30,7 +30,7 @@ class MPS:
 
         bits = [int(bit) for bit in bitstring]
         operands = [self._gammas[0][bits[0], :]]
-        for lambda_, gamma, bit in zip(self._lambdas[:-1], self._gammas[1:-1], bits[1:-1]):
+        for lambda_, gamma, bit in zip(self._lambdas[:-1], self._gammas[1:-1], bits[1:-1], strict=True):
             operands.append(lambda_)
             operands.append(gamma[:, bit, :])
         operands.append(self._lambdas[-1])
@@ -100,7 +100,8 @@ def TT_SVD_Vidal(
 ) -> tuple[list[np.ndarray], list[np.ndarray]]:
     """TT_SVD Vidal algorithm
 
-    Guifré Vidal, Efficient Classical Simulation of Slightly Entangled Quantum Computations, https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.91.147902, Phys. Rev. Lett. 91, 147902 – Published 1 October 2003
+    Guifré Vidal, Efficient Classical Simulation of Slightly Entangled Quantum Computations,
+    https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.91.147902, Phys. Rev. Lett. 91, 147902 – Published 1 October 2003
 
     Args:
         C (np.ndarray): n-dimensional input tensor
@@ -178,7 +179,7 @@ def make_expr(n_qubits: int) -> str:
 
     expr = []
     prev_inner = ""
-    for i, (outer_i, inner_i) in enumerate(zip(outer_indices, inner_indices)):
+    for i, (outer_i, inner_i) in enumerate(zip(outer_indices, inner_indices, strict=True)):
         if i + 1 < n_qubits:
             expr.extend([f"{prev_inner}{outer_i}{inner_i}", inner_i])
             prev_inner = inner_i
@@ -192,7 +193,7 @@ def remove_outer_indices(expr: str) -> str:
     new_expr = []
     for v in expr.split("->")[0].split(","):
         for c in alphabets:
-            v = v.replace(c, "")
+            v = v.replace(c, "")  # noqa: PLW2901
         new_expr.append(v)
     return ",".join(new_expr) + "->"
 
@@ -310,12 +311,12 @@ def apply_two_qubits_gate(
     i, j = control, target
 
     if i == j:
-        raise ValueError(f"control and target must be different.")
+        raise ValueError("control and target must be different.")
 
     auto_swap_list: list[tuple[int, int]] = []
     if i + 1 != j and j + 1 != i:
         if not auto_swap:
-            raise ValueError(f"only adjuscent qubits are supported.")
+            raise ValueError("only adjuscent qubits are supported.")
 
         if i > j:  # move control i -> i - 1
             for k in range(i, j + 1, -1):
@@ -365,8 +366,8 @@ def apply_two_qubits_gate(
     gammas[i + 1] = updated_gammas[1]
 
     if auto_swap_list is not None:
-        for k, l in auto_swap_list[::-1]:
-            apply_two_qubits_gate(gammas, lambdas, SWAP, k, l)
+        for k, m in auto_swap_list[::-1]:
+            apply_two_qubits_gate(gammas, lambdas, SWAP, k, m)
 
 
 CX = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]], dtype=complex)

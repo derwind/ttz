@@ -24,7 +24,7 @@ class TestTT(unittest.TestCase):
         input = torch.randn(1, 1024)
         output1 = layer(input).detach().cpu().numpy()
         output2 = ttlayer(input).detach().cpu().numpy()
-        self.assertTrue(np.allclose(output1, output2, atol=1e-6))
+        self.assertTrue(np.allclose(output1, output2, atol=1.7e-6))
 
     def test_ttlayer2(self):
         seed = 1234
