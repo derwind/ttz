@@ -178,6 +178,12 @@ class TTLayer(nn.Module):
     def _make_equation(self):
         in_shape = self.in_shape
         out_shape = self.out_shape
+        max_dim = 26
+        if len(in_shape) + len(out_shape) > max_dim:
+            raise ValueError(
+                f"TTLayer only supports up to {max_dim} total TT dimensions (in_shape + out_shape), "
+                f"but got {len(in_shape)} + {len(out_shape)} = {len(in_shape) + len(out_shape)}."
+            )
 
         small_letters = [chr(uni) for uni in range(ord("a"), ord("z") + 1)]
         # We no longer need to exclude 'N' since we use the ellipsis '...' for batch dimensions
