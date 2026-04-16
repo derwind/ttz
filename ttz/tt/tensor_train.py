@@ -126,15 +126,22 @@ class TTLayer(nn.Module):
         return f"in_shape={self.in_shape}, out_shape={self.out_shape}, n_comps={self.n_comps} " f"bond_dims={[x.shape[-1] for x in self.tt_W[:-1]]}"
 
     def forward(self, x):
-        x = x.reshape(x.shape[0], *self.in_shape)
-        # The `equation` string specifies the subscripts (letters in [a-zA-Z])
-        # "NCD,Aa,aBb,bCc,cD->NAB"
+        # Preserve all leading dimensions (e.g., [Batch] for CNNs, [Batch, Seq] for LLMs)
+        batch_dims = x.shape[:-1]
+
+        # Reshape only the last dimension (features) to match the TT input shape
+        x = x.reshape(*batch_dims, *self.in_shape)
+
+        # The `equation` string specifies the subscripts using the ellipsis '...'
+        # to broadcast over arbitrary leading dimensions (e.g., "...CD,Aa,aBb,bCc,cD->...AB")
         equation = self._make_equation()
         output = torch.einsum(equation, x, *self.tt_W)
+
         if self.B is not None:
             output += self.B
 
-        return torch.flatten(output, start_dim=1)
+        # Flatten the TT output dimensions back into a single feature dimension
+        return output.reshape(*batch_dims, -1)
 
     @property
     def tt_W(self):
@@ -171,16 +178,23 @@ class TTLayer(nn.Module):
     def _make_equation(self):
         in_shape = self.in_shape
         out_shape = self.out_shape
+        max_dim = 26
+        if len(in_shape) + len(out_shape) > max_dim:
+            raise ValueError(
+                f"TTLayer only supports up to {max_dim} total TT dimensions (in_shape + out_shape), "
+                f"but got {len(in_shape)} + {len(out_shape)} = {len(in_shape) + len(out_shape)}."
+            )
 
         small_letters = [chr(uni) for uni in range(ord("a"), ord("z") + 1)]
-        capital_letters = [chr(uni) for uni in range(ord("A"), ord("Z") + 1) if uni != ord("N")]
+        # We no longer need to exclude 'N' since we use the ellipsis '...' for batch dimensions
+        capital_letters = [chr(uni) for uni in range(ord("A"), ord("Z") + 1)]
         froms = []
         tos = []
         tts = []
 
         last_small_letter = None
 
-        # "NCD,Aa,aBb,bCc,cD->NAB"
+        # "...CD,Aa,aBb,bCc,cD->...AB"
         for i in range(len(out_shape)):
             L = capital_letters[0]
             sl = small_letters[0]
@@ -194,6 +208,7 @@ class TTLayer(nn.Module):
             else:
                 tts.append(f"{last_small_letter}{L}{sl}")
             last_small_letter = sl
+
         for i in range(len(in_shape)):
             L = capital_letters[0]
             sl = small_letters[0]
@@ -207,4 +222,6 @@ class TTLayer(nn.Module):
             else:
                 tts.append(f"{last_small_letter}{L}{sl}")
             last_small_letter = sl
-        return f'N{"".join(froms)},{",".join(tts)}->N{"".join(tos)}'
+
+        # Employ the ellipsis '...' to handle an arbitrary number of leading dimensions dynamically
+        return f'...{"".join(froms)},{",".join(tts)}->...{"".join(tos)}'

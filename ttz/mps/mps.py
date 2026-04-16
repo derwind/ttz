@@ -94,6 +94,16 @@ class MPS:
         apply_CCX(self._gammas, self._lambdas, i, j, k, auto_swap)
 
 
+def schmidt_decomposition(C, cutoff=1e-9):
+    U, S, Vh = np.linalg.svd(C, full_matrices=False)
+    # Truncate small singular values
+    keep = S > cutoff
+    schmidt_coeffs = S[keep]
+    left_kets = U[:, keep]
+    right_kets = Vh[keep, :].conj()
+    return schmidt_coeffs, left_kets, right_kets
+
+
 # https://github.com/Qiskit/qiskit-aer/blob/0.13.1/src/simulators/matrix_product_state/matrix_product_state_internal.cpp#L1754-L1819
 def TT_SVD_Vidal(
     C: np.ndarray, num_qubits: int | None = None, dims: tuple[int] = None
@@ -111,6 +121,8 @@ def TT_SVD_Vidal(
         list[np.ndarray]: Γs
         list[np.ndarray]: Λs
     """
+
+    cutoff=1e-9
 
     gammas = []
     lambdas = []
@@ -138,7 +150,16 @@ def TT_SVD_Vidal(
             ri_1 = r[i - 1]
         ri = r[i]
         C = C.reshape(ri_1 * dims[i], np.prod(dims[i + 1 :]))
-        U, S, Vh = np.linalg.svd(C, full_matrices=False)
+        if True:
+
+            U, S, Vh = np.linalg.svd(C, full_matrices=False)
+            if False:  # enable cutoff
+                n_valids = sum(S > cutoff)
+                U, S, Vh = U[:, :n_valids], S[:n_valids], Vh[:n_valids, :]
+        else:  # experimental
+            schmidt_coeffs, left_kets, right_kets = schmidt_decomposition(C, cutoff=cutoff)
+            U, S, Vh = left_kets, schmidt_coeffs, right_kets.conj()
+        ri = r[i] = min(ri, len(S))  # update ri by considering `cutoff`
         U = U[:, :ri]
         S = S[:ri]
         Vh = Vh[:ri, :]
