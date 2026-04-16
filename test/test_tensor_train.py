@@ -24,6 +24,13 @@ class TestTT(unittest.TestCase):
         input = torch.randn(1, 1024)
         output1 = layer(input).detach().cpu().numpy()
         output2 = ttlayer(input).detach().cpu().numpy()
+        if not np.allclose(output1, output2, atol=1.7e-6):
+            diff = np.abs(output1 - output2)
+            print("max diff:", np.max(diff))
+            print("mean diff:", np.mean(diff))
+            print("min diff:", np.min(diff))
+            print("output1[0, :10]:", output1.flatten()[:10])
+            print("output2[0, :10]:", output2.flatten()[:10])
         self.assertTrue(np.allclose(output1, output2, atol=1.7e-6))
 
     def test_ttlayer2(self):
@@ -38,6 +45,19 @@ class TestTT(unittest.TestCase):
         output1 = layer(input).detach().cpu().numpy()
         output2 = ttlayer(input).detach().cpu().numpy()
         self.assertTrue(np.allclose(output1, output2, atol=1e-5))
+
+    def test_ttlayer3(self):
+        seed = 1234
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed(seed)
+        torch.backends.cudnn.deterministic = True
+
+        layer = nn.Linear(1024, 100)
+        ttlayer = TTLayer.from_linear_layer([2**5, 2**5], [10, 10], layer)
+        input = torch.randn(2, 3, 1024)
+        output1 = layer(input).detach().cpu().numpy()
+        output2 = ttlayer(input).detach().cpu().numpy()
+        self.assertTrue(np.allclose(output1, output2, atol=2.7e-6))
 
     def test_low_rank_approximation1(self):
         seed = 1234
@@ -83,3 +103,18 @@ class TestTT(unittest.TestCase):
         output1 = layer(input).detach().cpu().numpy()
         output2 = ttlayer(input).detach().cpu().numpy()
         self.assertTrue(np.allclose(output1, output2, atol=0.36))
+
+    def test_low_rank_approximation4(self):
+        seed = 1234
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed(seed)
+        torch.backends.cudnn.deterministic = True
+
+        layer = nn.Linear(1024, 100)
+        ttlayer = TTLayer.from_linear_layer(
+            [2**5, 2**5], [10, 10], layer, bond_dims=[10, 99, 32]
+        )
+        input = torch.randn(2, 3, 1024)
+        output1 = layer(input).detach().cpu().numpy()
+        output2 = ttlayer(input).detach().cpu().numpy()
+        self.assertTrue(np.allclose(output1, output2, atol=0.18))
