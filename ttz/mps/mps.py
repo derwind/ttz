@@ -14,7 +14,7 @@ class MPS:
         self.num_qubits = num_qubits
         if gammas is not None and lambdas is not None:
             self._gammas = [gamma.copy() for gamma in gammas]
-            self._lambdas = [lambda_.copy() for lambda_ in gammas]
+            self._lambdas = [lambda_.copy() for lambda_ in lambdas]
         else:
             self._gammas, self._lambdas = zeros_mps(num_qubits)
 
